@@ -1,88 +1,168 @@
 ﻿<Window x:Class="SqlConstraintHelper.Desktop.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:viewmodels="clr-namespace:SqlConstraintHelper.Desktop.ViewModels"
-        mc:Ignorable="d"
-        Title="SQL Constraint &amp; Query Helper" 
-        Height="800" Width="1400"
-        WindowStartupLocation="CenterScreen">
+        Title="SQL Constraint &amp; Query Helper - Phase 2" 
+        Height="850" Width="1500"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource PrimaryBackground}">
 
     <Window.DataContext>
         <viewmodels:MainViewModel />
     </Window.DataContext>
 
-    <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-
-        <!-- Style for headers -->
-        <Style x:Key="HeaderStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Margin" Value="0,10,0,5"/>
-        </Style>
-
-        <!-- Style for section panels -->
-        <Style x:Key="SectionPanel" TargetType="Border">
-            <Setter Property="Background" Value="#F5F5F5"/>
-            <Setter Property="BorderBrush" Value="#CCCCCC"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="5"/>
-            <Setter Property="Padding" Value="10"/>
-            <Setter Property="Margin" Value="5"/>
-        </Style>
-    </Window.Resources>
-
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="100*"/>
-            <RowDefinition Height="587*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Connection Panel -->
-        <Border Grid.Row="0" Style="{StaticResource SectionPanel}" Margin="10,10,10,5">
+        <!-- Toolbar -->
+        <Border Grid.Row="0" Background="{DynamicResource SecondaryBackground}" 
+                BorderBrush="{DynamicResource PrimaryBorder}" BorderThickness="0,0,0,1" Padding="10,8">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="250"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="250"/>
-                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Text="Server:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <TextBox Grid.Column="1" Text="{Binding CurrentConnection.Server, UpdateSourceTrigger=PropertyChanged}" 
-                         VerticalAlignment="Center" IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBoolConverter}}"/>
+                <TextBlock Grid.Column="0" Text="SQL Constraint &amp; Query Helper" 
+                           FontSize="18" FontWeight="Bold" VerticalAlignment="Center"
+                           Foreground="{DynamicResource PrimaryText}"/>
 
-                <TextBlock Grid.Column="2" Text="Database:" VerticalAlignment="Center" Margin="20,0,10,0"/>
-                <TextBox Grid.Column="3" Text="{Binding CurrentConnection.Database, UpdateSourceTrigger=PropertyChanged}" 
-                         VerticalAlignment="Center" IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBoolConverter}}"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="💾 Profiles" Width="90" Height="32" Margin="5,0" 
+                            ToolTip="Manage Connection Profiles"/>
+                    <Button Content="📜 History" Width="90" Height="32" Margin="5,0" 
+                            ToolTip="Query History"/>
 
-                <CheckBox Grid.Column="4" Content="Windows Auth" IsChecked="{Binding CurrentConnection.UseIntegratedSecurity}" 
-                          VerticalAlignment="Center" Margin="20,0,0,0"
-                          IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBoolConverter}}"/>
-
-                <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="Connect" Command="{Binding ConnectCommand}" 
-                            Width="100" Height="30" Margin="5,0"
-                            Visibility="{Binding IsConnected, Converter={StaticResource InverseBoolToVisConverter}}"/>
-                    <Button Content="Disconnect" Command="{Binding DisconnectCommand}" 
-                            Width="100" Height="30" Margin="5,0"
-                            Visibility="{Binding IsConnected, Converter={StaticResource BoolToVis}}"/>
-                    <Button Content="Refresh" Command="{Binding RefreshCommand}" 
-                            Width="100" Height="30" Margin="5,0"
-                            IsEnabled="{Binding IsConnected}"/>
+                    <!-- Theme Toggle Button - FIXED -->
+                    <Button x:Name="ThemeToggle" Width="90" Height="32" Margin="5,0"
+                            Command="{Binding ToggleThemeCommand}"
+                            ToolTip="Toggle Theme">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorder}"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                                <Setter Property="Padding" Value="12,6"/>
+                                <Setter Property="FontSize" Value="13"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Setter Property="Content" Value="🌙 Dark"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsDarkTheme}" Value="True">
+                                        <Setter Property="Content" Value="☀️ Light"/>
+                                        <Setter Property="Background" Value="{DynamicResource ButtonBackgroundPressed}"/>
+                                    </DataTrigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource ButtonBackgroundHover}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>
 
+        <!-- Connection Panel with Profile Support -->
+        <Border Grid.Row="1" 
+                Background="{DynamicResource SecondaryBackground}"
+                BorderBrush="{DynamicResource PrimaryBorder}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Padding="10"
+                Margin="10,10,10,5">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Saved Profiles Row -->
+                <Grid Grid.Row="0" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="300"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Text="Saved Profiles:" VerticalAlignment="Center" 
+                               Margin="0,0,10,0" Foreground="{DynamicResource PrimaryText}"/>
+
+                    <!-- ComboBox - FIXED: Removed ItemTemplate that was causing error -->
+                    <ComboBox Grid.Column="1" 
+                              ItemsSource="{Binding SavedProfiles}" 
+                              SelectedItem="{Binding SelectedProfile}"
+                              DisplayMemberPath="Name"
+                              VerticalAlignment="Center"
+                              Height="28"
+                              Background="{DynamicResource TextBoxBackground}"
+                              Foreground="{DynamicResource PrimaryText}"
+                              BorderBrush="{DynamicResource TextBoxBorder}"/>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="📂 Load" Command="{Binding LoadProfileCommand}" 
+                                CommandParameter="{Binding SelectedProfile}"
+                                Width="80" Height="28" Margin="5,0"/>
+                        <Button Content="💾 Save" Command="{Binding SaveCurrentProfileCommand}" 
+                                Width="80" Height="28" Margin="5,0"/>
+                        <Button Content="🗑️ Delete" Command="{Binding DeleteProfileCommand}" 
+                                CommandParameter="{Binding SelectedProfile}"
+                                Width="80" Height="28" Margin="5,0"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Connection Details Row -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="250"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="250"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Text="Server:" VerticalAlignment="Center" 
+                               Margin="0,0,10,0" Foreground="{DynamicResource PrimaryText}"/>
+                    <TextBox Grid.Column="1" Text="{Binding CurrentConnection.Server, UpdateSourceTrigger=PropertyChanged}" 
+                             VerticalAlignment="Center" Height="28"
+                             IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBoolConverter}}"/>
+
+                    <TextBlock Grid.Column="2" Text="Database:" VerticalAlignment="Center" 
+                               Margin="20,0,10,0" Foreground="{DynamicResource PrimaryText}"/>
+                    <TextBox Grid.Column="3" Text="{Binding CurrentConnection.Database, UpdateSourceTrigger=PropertyChanged}" 
+                             VerticalAlignment="Center" Height="28"
+                             IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBoolConverter}}"/>
+
+                    <CheckBox Grid.Column="4" Content="Windows Auth" 
+                              IsChecked="{Binding CurrentConnection.UseIntegratedSecurity}" 
+                              VerticalAlignment="Center" Margin="20,0,0,0"
+                              Foreground="{DynamicResource PrimaryText}"
+                              IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBoolConverter}}"/>
+
+                    <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="🔌 Connect" Command="{Binding ConnectCommand}" 
+                                Width="100" Height="32" Margin="5,0"
+                                Visibility="{Binding IsConnected, Converter={StaticResource InverseBoolToVisConverter}}"/>
+                        <Button Content="❌ Disconnect" Command="{Binding DisconnectCommand}" 
+                                Width="110" Height="32" Margin="5,0"
+                                Visibility="{Binding IsConnected, Converter={StaticResource BoolToVis}}"/>
+                        <Button Content="🔄 Refresh" Command="{Binding RefreshCommand}" 
+                                Width="100" Height="32" Margin="5,0"
+                                IsEnabled="{Binding IsConnected}"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+
         <!-- Main Content -->
-        <Grid Grid.Row="1" Margin="10,5,10,5" Grid.RowSpan="2">
+        <Grid Grid.Row="2" Margin="10,5">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="300"/>
                 <ColumnDefinition Width="5"/>
@@ -90,14 +170,23 @@
             </Grid.ColumnDefinitions>
 
             <!-- Left Panel: Tables List -->
-            <Border Grid.Column="0" Style="{StaticResource SectionPanel}">
+            <Border Grid.Column="0" 
+                    Background="{DynamicResource SecondaryBackground}"
+                    BorderBrush="{DynamicResource PrimaryBorder}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="10">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="Tables" Style="{StaticResource HeaderStyle}"/>
+                    <TextBlock Grid.Row="0" Text="Tables" 
+                               Foreground="{DynamicResource PrimaryText}"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,8"/>
 
                     <DataGrid Grid.Row="1" 
                               ItemsSource="{Binding Tables}"
@@ -109,20 +198,23 @@
                               HeadersVisibility="Column">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Schema" Binding="{Binding SchemaName}" Width="60"/>
-                            <DataGridTextColumn Header="Table Name" Binding="{Binding TableName}" Width="*"/>
-                            <DataGridTextColumn Header="Rows" Binding="{Binding RowCount}" Width="60"/>
+                            <DataGridTextColumn Header="Table" Binding="{Binding TableName}" Width="*"/>
+                            <DataGridTextColumn Header="Rows" Binding="{Binding RowCount, StringFormat=N0}" Width="60"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
             </Border>
 
-            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#CCCCCC"/>
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" 
+                          Background="{DynamicResource PrimaryBorder}"/>
 
             <!-- Right Panel: Tabs -->
-            <TabControl Grid.Column="2">
+            <TabControl Grid.Column="2" Background="{DynamicResource PrimaryBackground}"
+                        BorderBrush="{DynamicResource PrimaryBorder}">
+
                 <!-- Table Details Tab -->
-                <TabItem Header="Table Details">
-                    <Grid Margin="10">
+                <TabItem Header="📋 Table Details">
+                    <Grid Margin="10" Background="{DynamicResource PrimaryBackground}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
@@ -133,9 +225,13 @@
                         <!-- Table Info -->
                         <StackPanel Grid.Row="0" Margin="0,0,0,10">
                             <TextBlock Text="{Binding SelectedTable.FullName, StringFormat='Table: {0}'}" 
-                                       FontSize="18" FontWeight="Bold"/>
+                                       Foreground="{DynamicResource PrimaryText}"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8"/>
                             <TextBlock Text="{Binding SelectedTable.RowCount, StringFormat='Rows: {0:N0}'}" 
-                                       Foreground="Gray" Margin="0,5,0,0"/>
+                                       Foreground="{DynamicResource SecondaryText}"
+                                       FontSize="12"/>
                         </StackPanel>
 
                         <!-- Columns Grid -->
@@ -145,25 +241,27 @@
                                   IsReadOnly="True">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Column" Binding="{Binding ColumnName}" Width="*"/>
-                                <DataGridTextColumn Header="Data Type" Binding="{Binding DataType}" Width="100"/>
+                                <DataGridTextColumn Header="Type" Binding="{Binding DataType}" Width="100"/>
                                 <DataGridCheckBoxColumn Header="PK" Binding="{Binding IsPrimaryKey}" Width="40"/>
                                 <DataGridCheckBoxColumn Header="FK" Binding="{Binding IsForeignKey}" Width="40"/>
-                                <DataGridCheckBoxColumn Header="Nullable" Binding="{Binding IsNullable}" Width="70"/>
+                                <DataGridCheckBoxColumn Header="Null" Binding="{Binding IsNullable}" Width="50"/>
                             </DataGrid.Columns>
                         </DataGrid>
 
                         <!-- Query Generation Buttons -->
                         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10">
                             <Button Content="SELECT" Command="{Binding GenerateSelectQueryCommand}" 
-                                    Width="80" Height="30" Margin="0,0,5,0"/>
+                                    Width="80" Height="32" Margin="0,0,5,0"/>
                             <Button Content="INSERT" Command="{Binding GenerateInsertQueryCommand}" 
-                                    Width="80" Height="30" Margin="0,0,5,0"/>
+                                    Width="80" Height="32" Margin="0,0,5,0"/>
                             <Button Content="UPDATE" Command="{Binding GenerateUpdateQueryCommand}" 
-                                    Width="80" Height="30" Margin="0,0,5,0"/>
+                                    Width="80" Height="32" Margin="0,0,5,0"/>
                             <Button Content="DELETE" Command="{Binding GenerateDeleteQueryCommand}" 
-                                    Width="80" Height="30" Margin="0,0,5,0"/>
-                            <Button Content="Copy Query" Command="{Binding CopyQueryCommand}" 
-                                    Width="100" Height="30" Margin="20,0,0,0"/>
+                                    Width="80" Height="32" Margin="0,0,5,0"/>
+                            <Button Content="📋 Copy" Command="{Binding CopyQueryCommand}" 
+                                    Width="90" Height="32" Margin="20,0,0,0"/>
+                            <Button Content="💾 Export" Command="{Binding ExportQueryCommand}" 
+                                    Width="90" Height="32" Margin="5,0"/>
                         </StackPanel>
 
                         <!-- Generated Query -->
@@ -172,14 +270,14 @@
                                  TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto"
                                  FontFamily="Consolas"
-                                 IsReadOnly="True"
-                                 Background="#F9F9F9"/>
+                                 FontSize="12"
+                                 IsReadOnly="True"/>
                     </Grid>
                 </TabItem>
 
                 <!-- Foreign Keys Tab -->
-                <TabItem Header="Foreign Keys">
-                    <Grid Margin="10">
+                <TabItem Header="🔗 Foreign Keys">
+                    <Grid Margin="10" Background="{DynamicResource PrimaryBackground}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
@@ -191,20 +289,20 @@
                                   AutoGenerateColumns="False"
                                   IsReadOnly="True">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Constraint Name" Binding="{Binding ConstraintName}" Width="*"/>
-                                <DataGridTextColumn Header="From Table" Binding="{Binding TableName}" Width="150"/>
-                                <DataGridTextColumn Header="Column" Binding="{Binding ColumnName}" Width="120"/>
-                                <DataGridTextColumn Header="To Table" Binding="{Binding ReferencedTable}" Width="150"/>
-                                <DataGridTextColumn Header="Column" Binding="{Binding ReferencedColumn}" Width="120"/>
+                                <DataGridTextColumn Header="Constraint" Binding="{Binding ConstraintName}" Width="*"/>
+                                <DataGridTextColumn Header="From" Binding="{Binding TableName}" Width="120"/>
+                                <DataGridTextColumn Header="Column" Binding="{Binding ColumnName}" Width="100"/>
+                                <DataGridTextColumn Header="To" Binding="{Binding ReferencedTable}" Width="120"/>
+                                <DataGridTextColumn Header="Column" Binding="{Binding ReferencedColumn}" Width="100"/>
                                 <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding IsEnabled}" Width="70"/>
                             </DataGrid.Columns>
                         </DataGrid>
 
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,0">
-                            <Button Content="Enable/Disable Constraint" 
+                            <Button Content="🔄 Toggle Constraint" 
                                     Command="{Binding ToggleConstraintCommand}"
                                     CommandParameter="{Binding SelectedForeignKey}"
-                                    Width="180" Height="30"/>
+                                    Width="160" Height="32"/>
                         </StackPanel>
                     </Grid>
                 </TabItem>
@@ -213,69 +311,98 @@
                 <TabItem>
                     <TabItem.Header>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Issues"/>
-                            <Border Background="Red" CornerRadius="10" Margin="5,0,0,0" 
-                                    Padding="5,0" MinWidth="20"
+                            <TextBlock Text="⚠️ Issues"/>
+                            <Border Background="{DynamicResource ErrorBrush}" CornerRadius="10" 
+                                    Margin="8,0,0,0" Padding="6,2" MinWidth="22"
                                     Visibility="{Binding ErrorCount, Converter={StaticResource CountToVisibilityConverter}}">
                                 <TextBlock Text="{Binding ErrorCount}" Foreground="White" 
-                                           FontWeight="Bold" FontSize="10"/>
+                                           FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
                             </Border>
                         </StackPanel>
                     </TabItem.Header>
 
-                    <DataGrid ItemsSource="{Binding Issues}"
+                    <DataGrid ItemsSource="{Binding Issues}" Margin="10"
                               AutoGenerateColumns="False"
                               IsReadOnly="True"
-                              Margin="10">
+                              Background="{DynamicResource PrimaryBackground}">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Severity" Binding="{Binding Severity}" Width="80"/>
-                            <DataGridTextColumn Header="Constraint" Binding="{Binding ConstraintName}" Width="200"/>
-                            <DataGridTextColumn Header="Table" Binding="{Binding TableName}" Width="150"/>
+                            <DataGridTextColumn Header="Constraint" Binding="{Binding ConstraintName}" Width="180"/>
+                            <DataGridTextColumn Header="Table" Binding="{Binding TableName}" Width="120"/>
                             <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*"/>
-                            <DataGridTextColumn Header="Affected" Binding="{Binding AffectedRows}" Width="80"/>
+                            <DataGridTextColumn Header="Rows" Binding="{Binding AffectedRows, StringFormat=N0}" Width="70"/>
                         </DataGrid.Columns>
                         <DataGrid.RowStyle>
                             <Style TargetType="DataGridRow">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding Severity}" Value="Error">
-                                        <Setter Property="Background" Value="#FFEBEE"/>
+                                        <Setter Property="Background" Value="{DynamicResource ErrorBackground}"/>
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding Severity}" Value="Critical">
-                                        <Setter Property="Background" Value="#FFCDD2"/>
+                                        <Setter Property="Background" Value="{DynamicResource CriticalBackground}"/>
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding Severity}" Value="Warning">
-                                        <Setter Property="Background" Value="#FFF9C4"/>
+                                        <Setter Property="Background" Value="{DynamicResource WarningBackground}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </DataGrid.RowStyle>
                     </DataGrid>
                 </TabItem>
+
+                <!-- Query History Tab -->
+                <TabItem Header="📜 History">
+                    <DataGrid ItemsSource="{Binding QueryHistory}" Margin="10"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              Background="{DynamicResource PrimaryBackground}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Date" Binding="{Binding ExecutedDate, StringFormat=g}" Width="140"/>
+                            <DataGridTextColumn Header="Type" Binding="{Binding QueryType}" Width="80"/>
+                            <DataGridTextColumn Header="Table" Binding="{Binding TableName}" Width="120"/>
+                            <DataGridTextColumn Header="Query" Binding="{Binding QueryText}" Width="*"/>
+                            <DataGridTemplateColumn Header="Action" Width="80">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="Load" 
+                                                Command="{Binding DataContext.LoadHistoryQueryCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                CommandParameter="{Binding}"
+                                                Height="24" Width="60"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </TabItem>
             </TabControl>
         </Grid>
 
         <!-- Status Bar -->
-        <Border Grid.Row="2" Background="#E0E0E0" BorderBrush="#CCCCCC" BorderThickness="0,1,0,0" Height="30" Margin="0,587,0,0" Grid.RowSpan="2">
+        <Border Grid.Row="3" Background="{DynamicResource SecondaryBackground}" 
+                BorderBrush="{DynamicResource PrimaryBorder}" BorderThickness="0,1,0,0" Height="32">
             <Grid Margin="10,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" VerticalAlignment="Center"
+                           Foreground="{DynamicResource PrimaryText}"/>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <ProgressBar Width="100" Height="15" IsIndeterminate="True" 
+                    <ProgressBar Width="100" Height="16" IsIndeterminate="True" 
                                  Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}"
                                  Margin="0,0,10,0"/>
                     <TextBlock Text="{Binding Tables.Count, StringFormat='Tables: {0}'}" 
-                               VerticalAlignment="Center" Margin="10,0"/>
+                               VerticalAlignment="Center" Margin="10,0"
+                               Foreground="{DynamicResource SecondaryText}"/>
                     <TextBlock Text="{Binding ForeignKeys.Count, StringFormat='FKs: {0}'}" 
-                               VerticalAlignment="Center" Margin="10,0"/>
-                    <Border Background="Red" CornerRadius="3" Padding="5,2" Margin="10,0,0,0"
+                               VerticalAlignment="Center" Margin="10,0"
+                               Foreground="{DynamicResource SecondaryText}"/>
+                    <Border Background="{DynamicResource ErrorBrush}" CornerRadius="4" Padding="6,3" Margin="10,0,0,0"
                             Visibility="{Binding ErrorCount, Converter={StaticResource CountToVisibilityConverter}}">
                         <TextBlock Text="{Binding ErrorCount, StringFormat='Errors: {0}'}" 
-                                   Foreground="White" FontWeight="Bold"/>
+                                   Foreground="White" FontWeight="SemiBold" FontSize="11"/>
                     </Border>
                 </StackPanel>
             </Grid>

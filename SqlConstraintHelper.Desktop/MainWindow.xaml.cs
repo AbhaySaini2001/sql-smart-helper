@@ -1,13 +1,4 @@
-﻿using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+﻿using System.Windows;
 
 namespace SqlConstraintHelper.Desktop;
 
@@ -18,6 +9,16 @@ public partial class MainWindow : Window
 {
     public MainWindow()
     {
-        InitializeComponent();
+        try
+        {
+            InitializeComponent();
+        }
+        catch (Exception ex)
+        {
+            // Log the inner exception message and stack trace for details
+            System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException?.Message}");
+            // Re-throw the exception to keep the application from running in a bad state
+            throw;
+        }
     }
 }
