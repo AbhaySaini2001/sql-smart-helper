@@ -229,7 +229,7 @@
                                        FontSize="16"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,8"/>
-                            <TextBlock Text="{Binding SelectedTable.RowCount, StringFormat='Rows: {0:N0}'}" 
+                            <TextBlock Text="{Binding SelectedTable.RowCounts, StringFormat='Rows: {0:N0}'}" 
                                        Foreground="{DynamicResource SecondaryText}"
                                        FontSize="12"/>
                         </StackPanel>
@@ -374,6 +374,565 @@
                         </DataGrid.Columns>
                     </DataGrid>
                 </TabItem>
+
+                <!-- Graph Visualization Tab -->
+                <TabItem Header="🗺️ Schema Graph">
+                    <Grid Background="{DynamicResource PrimaryBackground}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Toolbar -->
+                        <Border Grid.Row="0" 
+                                Background="{DynamicResource SecondaryBackground}"
+                                BorderBrush="{DynamicResource PrimaryBorder}"
+                                BorderThickness="0,0,0,1"
+                                Padding="10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Layout Selection -->
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,15,0">
+                                    <TextBlock Text="Layout:" VerticalAlignment="Center" Margin="0,0,8,0"
+                                               Foreground="{DynamicResource PrimaryText}"/>
+                                    <ComboBox ItemsSource="{Binding GraphViewModel.AvailableLayouts}" 
+                                              SelectedItem="{Binding GraphViewModel.SelectedLayout}"
+                                              Width="120"
+                                              Background="{DynamicResource TextBoxBackground}"
+                                              Foreground="{DynamicResource PrimaryText}"/>
+                                    <Button Content="Apply" Command="{Binding GraphViewModel.ChangeLayoutCommand}" 
+                                            Width="70" Height="28" Margin="5,0,0,0"/>
+                                </StackPanel>
+
+                                <!-- Filter Controls -->
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,15,0">
+                                    <CheckBox Content="Orphaned Only" 
+                                              IsChecked="{Binding GraphViewModel.ShowOrphanedOnly}"
+                                              VerticalAlignment="Center"
+                                              Foreground="{DynamicResource PrimaryText}"
+                                              Margin="0,0,10,0"/>
+                                    <TextBlock Text="Schema:" VerticalAlignment="Center" Margin="0,0,5,0"
+                                               Foreground="{DynamicResource PrimaryText}"/>
+                                    <TextBox Text="{Binding GraphViewModel.SchemaFilter, UpdateSourceTrigger=PropertyChanged}" 
+                                              Width="100" VerticalAlignment="Center"/>
+                                    <Button Content="Filter" Command="{Binding GraphViewModel.ApplyFilterCommand}" 
+                                             Width="60" Height="28" Margin="5,0,0,0"/>
+                                    <Button Content="Clear" Command="{Binding GraphViewModel.ClearFilterCommand}" 
+                                             Width="60" Height="28" Margin="5,0,0,0"/>
+                                </StackPanel>
+
+                                <!-- Tools -->
+                                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                    <Button Content="🔍 Zoom Fit" Click="ZoomFit_Click"
+                                            Width="90" Height="28" Margin="0,0,5,0"/>
+                                    <Button Content="🔄 Reset" Click="ResetView_Click"
+                                            Width="80" Height="28" Margin="0,0,5,0"/>
+                                    <Button Content="🔗 Related" Command="{Binding GraphViewModel.FindRelatedTablesCommand}"
+                                            Width="80" Height="28" Margin="0,0,5,0"/>
+                                    <Button Content="⚠️ Cycles" Command="{Binding GraphViewModel.DetectCircularReferencesCommand}"
+                                            Width="80" Height="28"/>
+                                </StackPanel>
+
+                                <!-- Statistics -->
+                                <StackPanel Grid.Column="4" Orientation="Horizontal">
+                                    <Border Background="{DynamicResource AccentBackground}" 
+                                            BorderBrush="{DynamicResource PrimaryBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="3"
+                                            Padding="8,4"
+                                            Margin="5,0">
+                                        <TextBlock Foreground="{DynamicResource PrimaryText}" FontSize="11">
+                            <Run Text="Tables: "/>
+                            <Run Text="{Binding GraphViewModel.Statistics.TotalTables, Mode=OneWay}" FontWeight="Bold"/>
+                                        </TextBlock>
+                                    </Border>
+                                    <Border Background="{DynamicResource AccentBackground}" 
+                                            BorderBrush="{DynamicResource PrimaryBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="3"
+                                            Padding="8,4"
+                                            Margin="5,0">
+                                        <TextBlock Foreground="{DynamicResource PrimaryText}" FontSize="11">
+                            <Run Text="Links: "/>
+                            <Run Text="{Binding GraphViewModel.Statistics.TotalRelationships, Mode=OneWay}" FontWeight="Bold"/>
+                                        </TextBlock>
+                                    </Border>
+                                    <Border Background="{DynamicResource WarningBackground}" 
+                                            BorderBrush="{DynamicResource PrimaryBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="3"
+                                            Padding="8,4"
+                                            Margin="5,0"
+                                            Visibility="{Binding GraphViewModel.Statistics.OrphanedTables, Converter={StaticResource CountToVisibilityConverter}}">
+                                        <TextBlock Foreground="{DynamicResource PrimaryText}" FontSize="11">
+                            <Run Text="Orphaned: "/>
+                            <Run Text="{Binding GraphViewModel.Statistics.OrphanedTables, Mode=OneWay}" FontWeight="Bold"/>
+                                        </TextBlock>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Graph Canvas -->
+                        <Border Grid.Row="1" 
+                                BorderBrush="{DynamicResource PrimaryBorder}"
+                                BorderThickness="1"
+                                Margin="5"
+                                Background="White">
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto" 
+                          VerticalScrollBarVisibility="Auto">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- This will be the custom canvas control -->
+                                    <Border x:Name="GraphCanvasContainer" 
+                                            MinWidth="800" 
+                                            MinHeight="600"
+                                            Background="White">
+                                        <TextBlock Text="Click 'Refresh' in main window to build graph"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="16"
+                                                   Foreground="Gray"
+                                                   Visibility="{Binding GraphViewModel.CurrentGraph, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                    </Border>
+
+                                    <!-- Legend -->
+                                    <Border HorizontalAlignment="Right" 
+                                            VerticalAlignment="Top"
+                                            Background="White"
+                                            BorderBrush="{DynamicResource PrimaryBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="4"
+                                            Padding="10"
+                                            Margin="10"
+                                            Opacity="0.95">
+                                        <StackPanel>
+                                            <TextBlock Text="Legend" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+
+                                            <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                <Rectangle Width="12" Height="12" Fill="#2196F3" Margin="0,0,5,0"/>
+                                                <TextBlock Text="Primary Table" FontSize="10"/>
+                                            </StackPanel>
+
+                                            <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                <Rectangle Width="12" Height="12" Fill="#4CAF50" Margin="0,0,5,0"/>
+                                                <TextBlock Text="Lookup Table" FontSize="10"/>
+                                            </StackPanel>
+
+                                            <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                <Rectangle Width="12" Height="12" Fill="#9C27B0" Margin="0,0,5,0"/>
+                                                <TextBlock Text="Junction Table" FontSize="10"/>
+                                            </StackPanel>
+
+                                            <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                <Rectangle Width="12" Height="12" Fill="#9E9E9E" Margin="0,0,5,0"/>
+                                                <TextBlock Text="Orphaned" FontSize="10"/>
+                                            </StackPanel>
+
+                                            <Separator Margin="0,5"/>
+
+                                            <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                <Line X1="0" Y1="6" X2="15" Y2="6" Stroke="Gray" StrokeThickness="2" Margin="0,0,5,0"/>
+                                                <TextBlock Text="Enabled FK" FontSize="10"/>
+                                            </StackPanel>
+
+                                            <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                <Line X1="0" Y1="6" X2="15" Y2="6" Stroke="Red" StrokeThickness="2" 
+                                      StrokeDashArray="3,2" Margin="0,0,5,0"/>
+                                                <TextBlock Text="Disabled FK" FontSize="10"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </ScrollViewer>
+                        </Border>
+
+                        <!-- Details Panel -->
+                        <Border Grid.Row="2" 
+                                Background="{DynamicResource SecondaryBackground}"
+                                BorderBrush="{DynamicResource PrimaryBorder}"
+                                BorderThickness="0,1,0,0"
+                                Padding="10"
+                                Height="80">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Selected Node/Edge Details -->
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="{Binding GraphViewModel.StatusMessage}" 
+                               FontSize="12"
+                               Foreground="{DynamicResource PrimaryText}"
+                               Margin="0,0,0,5"/>
+
+                                    <StackPanel Orientation="Horizontal" 
+                                Visibility="{Binding GraphViewModel.SelectedNode, Converter={StaticResource NullToVisibilityConverter}}">
+                                        <TextBlock Text="Selected Table: " FontSize="11" Foreground="{DynamicResource SecondaryText}"/>
+                                        <TextBlock Text="{Binding GraphViewModel.SelectedNode.TableName}" FontWeight="Bold" FontSize="11"
+                                   Foreground="{DynamicResource PrimaryText}"/>
+                                        <TextBlock Text=" | Type: " FontSize="11" Foreground="{DynamicResource SecondaryText}" Margin="10,0,0,0"/>
+                                        <TextBlock Text="{Binding GraphViewModel.SelectedNode.Type}" FontSize="11"
+                                   Foreground="{DynamicResource PrimaryText}"/>
+                                        <TextBlock Text=" | Rows: " FontSize="11" Foreground="{DynamicResource SecondaryText}" Margin="10,0,0,0"/>
+                                        <TextBlock Text="{Binding GraphViewModel.SelectedNode.RowCount, StringFormat=N0}" FontSize="11"
+                                   Foreground="{DynamicResource PrimaryText}"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" 
+                                Visibility="{Binding GraphViewModel.SelectedEdge, Converter={StaticResource NullToVisibilityConverter}}"
+                                Margin="0,5,0,0">
+                                        <TextBlock Text="Selected Relationship: " FontSize="11" Foreground="{DynamicResource SecondaryText}"/>
+                                        <TextBlock Text="{Binding GraphViewModel.SelectedEdge.ConstraintName}" FontWeight="Bold" FontSize="11"
+                                   Foreground="{DynamicResource PrimaryText}"/>
+                                        <TextBlock Text=" | Status: " FontSize="11" Foreground="{DynamicResource SecondaryText}" Margin="10,0,0,0"/>
+                                        <TextBlock FontSize="11" Foreground="{DynamicResource PrimaryText}">
+                            <Run Text="{Binding GraphViewModel.SelectedEdge.IsEnabled, Converter={StaticResource BoolToEnabledConverter}}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Instructions -->
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                    <TextBlock Text="💡 Controls:" FontSize="10" FontWeight="Bold" 
+                               Foreground="{DynamicResource PrimaryText}" Margin="0,0,0,3"/>
+                                    <TextBlock FontSize="9" Foreground="{DynamicResource SecondaryText}">
+                        <Run Text="• Mouse Wheel: Zoom"/>
+                        <LineBreak/>
+                        <Run Text="• Left Click + Drag: Pan"/>
+                        <LineBreak/>
+                        <Run Text="• Click Node/Edge: Select"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Loading Overlay -->
+                        <Border Grid.RowSpan="3" Background="#80000000" 
+                                Visibility="{Binding GraphViewModel.IsLoading, Converter={StaticResource BoolToVis}}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ProgressBar Width="200" Height="20" IsIndeterminate="True"/>
+                                <TextBlock Text="Building graph..." Foreground="White" FontSize="16" 
+                                           Margin="0,10,0,0" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
+                <!-- Query Builder Tab -->
+                <TabItem Header="🔨 Query Builder">
+                    <Grid Background="{DynamicResource PrimaryBackground}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="250"/>
+                            <ColumnDefinition Width="5"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left Panel: Available Tables -->
+                        <Border Grid.Column="0" 
+                Background="{DynamicResource SecondaryBackground}"
+                BorderBrush="{DynamicResource PrimaryBorder}"
+                BorderThickness="0,0,1,0"
+                Padding="10">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Text="Available Tables"
+                           Foreground="{DynamicResource PrimaryText}"
+                           FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                                <ListBox Grid.Row="1"
+                         ItemsSource="{Binding QueryBuilderViewModel.AvailableTablesList}"
+                         Background="{DynamicResource TextBoxBackground}"
+                         Foreground="{DynamicResource PrimaryText}"
+                         BorderBrush="{DynamicResource TextBoxBorder}">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Padding="5" Cursor="Hand"
+                                    MouseLeftButtonDown="AvailableTable_Click">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding TableName}" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="{Binding SchemaName}" FontSize="10" 
+                                               Foreground="{DynamicResource SecondaryText}"/>
+                                                    <TextBlock Text="{Binding RowCount, StringFormat='{}{0:N0} rows'}" 
+                                               FontSize="9" Foreground="{DynamicResource SecondaryText}"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </Border>
+
+                        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" 
+                      Background="{DynamicResource PrimaryBorder}"/>
+
+                        <!-- Right Panel: Query Builder -->
+                        <Grid Grid.Column="2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="250"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Toolbar -->
+                            <Border Grid.Row="0" 
+                    Background="{DynamicResource SecondaryBackground}"
+                    BorderBrush="{DynamicResource PrimaryBorder}"
+                    BorderThickness="0,0,0,1"
+                    Padding="10">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="🔗 Suggest JOINs" 
+                            Command="{Binding QueryBuilderViewModel.SuggestJoinsCommand}"
+                            Width="120" Height="30" Margin="0,0,5,0"/>
+                                    <Button Content="➕ Add JOIN" 
+                            Command="{Binding QueryBuilderViewModel.AddJoinCommand}"
+                            Width="100" Height="30" Margin="0,0,5,0"/>
+                                    <Button Content="🔍 Find Path" 
+                            Command="{Binding QueryBuilderViewModel.FindJoinPathCommand}"
+                            Width="100" Height="30" Margin="0,0,5,0"/>
+                                    <Separator Width="1" Margin="10,0"/>
+                                    <Button Content="🔄 Regenerate" 
+                            Command="{Binding QueryBuilderViewModel.RegenerateQueryCommand}"
+                            Width="110" Height="30" Margin="0,0,5,0"/>
+                                    <Button Content="📋 Copy SQL" 
+                            Command="{Binding QueryBuilderViewModel.CopyQueryCommand}"
+                            Width="100" Height="30" Margin="0,0,5,0"/>
+                                    <Button Content="🗑️ Clear" 
+                            Command="{Binding QueryBuilderViewModel.ClearQueryCommand}"
+                            Width="80" Height="30" Margin="0,0,5,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Main Content Area -->
+                            <Grid Grid.Row="1" Margin="10">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Selected Tables Section -->
+                                <TextBlock Grid.Row="0" Text="Selected Tables &amp; Columns"
+                           Foreground="{DynamicResource PrimaryText}"
+                           FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl ItemsSource="{Binding QueryBuilderViewModel.SelectedTables}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{DynamicResource SecondaryBackground}"
+                                        BorderBrush="{DynamicResource PrimaryBorder}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Padding="10"
+                                        Margin="0,0,0,10">
+                                                    <Grid>
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto"/>
+                                                            <RowDefinition Height="Auto"/>
+                                                        </Grid.RowDefinitions>
+
+                                                        <!-- Table Header -->
+                                                        <Grid Grid.Row="0">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <StackPanel Grid.Column="0">
+                                                                <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" FontSize="13"
+                                                           Foreground="{DynamicResource PrimaryText}"/>
+                                                                <TextBlock Text="{Binding FullName}" FontSize="10"
+                                                           Foreground="{DynamicResource SecondaryText}"/>
+                                                            </StackPanel>
+
+                                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                                <Button Content="✓ All" 
+                                                        Command="{Binding DataContext.QueryBuilderViewModel.SelectAllColumnsCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Width="50" Height="24" Margin="0,0,5,0" FontSize="10"/>
+                                                                <Button Content="✗ None" 
+                                                        Command="{Binding DataContext.QueryBuilderViewModel.DeselectAllColumnsCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Width="50" Height="24" Margin="0,0,5,0" FontSize="10"/>
+                                                                <Button Content="🗑️" 
+                                                        Command="{Binding DataContext.QueryBuilderViewModel.RemoveTableCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Width="30" Height="24" FontSize="10"/>
+                                                            </StackPanel>
+                                                        </Grid>
+
+                                                        <!-- Columns List -->
+                                                        <ItemsControl Grid.Row="1" ItemsSource="{Binding Columns}" Margin="0,10,0,0">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <WrapPanel/>
+                                                                </ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <CheckBox Content="{Binding ColumnName}"
+                                                              IsChecked="{Binding IsSelected}"
+                                                              Foreground="{DynamicResource PrimaryText}"
+                                                              Margin="0,2,15,2"
+                                                              FontSize="11">
+                                                                        <CheckBox.ToolTip>
+                                                                            <ToolTip>
+                                                                                <StackPanel>
+                                                                                    <TextBlock Text="{Binding ColumnName}" FontWeight="Bold"/>
+                                                                                    <TextBlock Text="{Binding DataType}"/>
+                                                                                    <TextBlock Text="Primary Key" Visibility="{Binding IsPrimaryKey, Converter={StaticResource BoolToVis}}"/>
+                                                                                    <TextBlock Text="Foreign Key" Visibility="{Binding IsForeignKey, Converter={StaticResource BoolToVis}}"/>
+                                                                                </StackPanel>
+                                                                            </ToolTip>
+                                                                        </CheckBox.ToolTip>
+                                                                    </CheckBox>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+
+                                <!-- JOINs Section -->
+                                <TextBlock Grid.Row="2" Text="JOINs"
+                           Foreground="{DynamicResource PrimaryText}"
+                           FontSize="14" FontWeight="Bold" Margin="0,10,0,10"/>
+
+                                <DataGrid Grid.Row="3"
+                          ItemsSource="{Binding QueryBuilderViewModel.Joins}"
+                          SelectedItem="{Binding QueryBuilderViewModel.SelectedJoin}"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          Background="{DynamicResource DataGridBackground}">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Join Type" Binding="{Binding JoinType}" Width="100"/>
+                                        <DataGridTextColumn Header="Left Table" Width="120">
+                                            <DataGridTextColumn.Binding>
+                                                <MultiBinding StringFormat="{}{0}">
+                                                    <Binding Path="LeftTableId"/>
+                                                </MultiBinding>
+                                            </DataGridTextColumn.Binding>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Header="Right Table" Width="120">
+                                            <DataGridTextColumn.Binding>
+                                                <MultiBinding StringFormat="{}{0}">
+                                                    <Binding Path="RightTableId"/>
+                                                </MultiBinding>
+                                            </DataGridTextColumn.Binding>
+                                        </DataGridTextColumn>
+                                        <DataGridCheckBoxColumn Header="Auto" Binding="{Binding IsAutoGenerated}" Width="50"/>
+                                        <DataGridTextColumn Header="Constraint" Binding="{Binding ConstraintName}" Width="*"/>
+                                        <DataGridTemplateColumn Header="Actions" Width="80">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Button Content="Remove" 
+                                            Command="{Binding DataContext.QueryBuilderViewModel.RemoveJoinCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}"
+                                            Height="24" Width="70"/>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+
+                            <!-- Suggestions Panel -->
+                            <Border Grid.Row="2" 
+                    Background="{DynamicResource SecondaryBackground}"
+                    BorderBrush="{DynamicResource PrimaryBorder}"
+                    BorderThickness="0,1,0,1"
+                    Padding="10"
+                    MaxHeight="120"
+                    Visibility="{Binding QueryBuilderViewModel.Suggestions.Count, Converter={StaticResource CountToVisibilityConverter}}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Text="💡 Suggestions"
+                               Foreground="{DynamicResource PrimaryText}"
+                               FontWeight="Bold" Margin="0,0,0,5"/>
+
+                                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl ItemsSource="{Binding QueryBuilderViewModel.Suggestions}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Padding="5,3" Margin="0,2"
+                                            Background="{DynamicResource WarningBackground}"
+                                            CornerRadius="3">
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="11"
+                                                       Foreground="{DynamicResource PrimaryText}"/>
+                                                            <TextBlock Text="{Binding Description}" FontSize="10" TextWrapping="Wrap"
+                                                       Foreground="{DynamicResource SecondaryText}"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Border>
+
+                            <!-- Generated SQL -->
+                            <Grid Grid.Row="3" Margin="10,0,10,10">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Text="Generated SQL"
+                           Foreground="{DynamicResource PrimaryText}"
+                           FontSize="14" FontWeight="Bold" Margin="0,10,0,10"/>
+
+                                <TextBox Grid.Row="1"
+                         Text="{Binding QueryBuilderViewModel.GeneratedSql, Mode=OneWay}"
+                         FontFamily="Consolas"
+                         FontSize="12"
+                         IsReadOnly="True"
+                         TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto"
+                         Background="{DynamicResource TextBoxBackground}"
+                         Foreground="{DynamicResource PrimaryText}"
+                         BorderBrush="{DynamicResource TextBoxBorder}"/>
+                            </Grid>
+                        </Grid>
+
+                        <!-- Loading Overlay -->
+                        <Border Grid.ColumnSpan="3" Background="#80000000" 
+                Visibility="{Binding QueryBuilderViewModel.IsLoading, Converter={StaticResource BoolToVis}}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ProgressBar Width="200" Height="20" IsIndeterminate="True"/>
+                                <TextBlock Text="Processing..." Foreground="White" FontSize="16" 
+                           Margin="0,10,0,0" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
             </TabControl>
         </Grid>
 

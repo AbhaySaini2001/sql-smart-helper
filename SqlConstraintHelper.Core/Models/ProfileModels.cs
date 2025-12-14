@@ -142,7 +142,8 @@ namespace SqlConstraintHelper.Core.Models
         SQL,
         CSV,
         JSON,
-        XML
+        XML,
+        PNG
     }
 
     /// <summary>

@@ -63,10 +63,18 @@ namespace SqlConstraintHelper.Desktop.ViewModels
         [ObservableProperty]
         private ObservableCollection<QueryHistoryItem> _queryHistory = new();
 
+        [ObservableProperty]
+        private GraphViewModel _graphViewModel;
+
+        [ObservableProperty]
+        private QueryBuilderViewModel _queryBuilderViewModel;
+
         public MainViewModel(ISettingsService settingsService, IThemeManager themeManager)
         {
             _settingsService = settingsService;
             _themeManager = themeManager;
+            _graphViewModel = new GraphViewModel();
+            _queryBuilderViewModel = new QueryBuilderViewModel();
 
             // Initialize
             _ = InitializeAsync();
@@ -295,6 +303,10 @@ namespace SqlConstraintHelper.Desktop.ViewModels
                 ErrorCount = issues.Count(i => i.Severity == IssueSeverity.Error || i.Severity == IssueSeverity.Critical);
                 WarningCount = issues.Count(i => i.Severity == IssueSeverity.Warning);
 
+                // Build graph visualization
+                StatusMessage = "Building schema graph...";
+                await GraphViewModel.BuildGraphAsync(tables, fks.ToList());
+
                 StatusMessage = $"Found {ErrorCount} errors, {WarningCount} warnings";
             }
             catch (Exception ex)
@@ -439,7 +451,7 @@ namespace SqlConstraintHelper.Desktop.ViewModels
         [RelayCommand]
         private void Disconnect()
         {
-           // _dbService?.Dispose();
+            //_dbService?.Dispose();
             _dbService = null;
             IsConnected = false;
             Tables.Clear();
