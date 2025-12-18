@@ -307,6 +307,14 @@ namespace SqlConstraintHelper.Desktop.ViewModels
                 StatusMessage = "Building schema graph...";
                 await GraphViewModel.BuildGraphAsync(tables, fks.ToList());
 
+                // Initialize query builder
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    QueryBuilderViewModel.Initialize(tables, fks.ToList());
+                });
+
+                StatusMessage = $"Loaded {tables.Count} tables - Query Builder ready with {QueryBuilderViewModel.AvailableTablesList.Count} tables";
+
                 StatusMessage = $"Found {ErrorCount} errors, {WarningCount} warnings";
             }
             catch (Exception ex)
@@ -433,7 +441,7 @@ namespace SqlConstraintHelper.Desktop.ViewModels
         }
 
         [RelayCommand]
-        private void ViewIssueDetails(ConstraintIssue? issue)
+        private static void ViewIssueDetails(ConstraintIssue? issue)
         {
             if (issue == null) return;
 

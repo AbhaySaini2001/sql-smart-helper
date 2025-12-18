@@ -4,6 +4,7 @@ using SqlConstraintHelper.Core.Models;
 using SqlConstraintHelper.Core.Services;
 using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Input;
 
 namespace SqlConstraintHelper.Desktop.ViewModels
 {
@@ -21,6 +22,9 @@ namespace SqlConstraintHelper.Desktop.ViewModels
 
         [ObservableProperty]
         private ObservableCollection<TableInfo> _availableTablesList = new();
+
+        [ObservableProperty]
+        private TableInfo? _selectedAvailableTable;
 
         [ObservableProperty]
         private ObservableCollection<QueryTable> _selectedTables = new();
@@ -65,13 +69,18 @@ namespace SqlConstraintHelper.Desktop.ViewModels
             _availableTables = tables;
             _foreignKeys = foreignKeys;
 
+            // IMPORTANT: Clear and repopulate the ObservableCollection
             AvailableTablesList.Clear();
+
             foreach (var table in tables.OrderBy(t => t.SchemaName).ThenBy(t => t.TableName))
             {
                 AvailableTablesList.Add(table);
             }
 
-            StatusMessage = $"{tables.Count} tables available";
+            StatusMessage = $"{AvailableTablesList.Count} tables available";
+
+            // Debug output
+            System.Diagnostics.Debug.WriteLine($"QueryBuilder initialized with {AvailableTablesList.Count} tables");
         }
 
         [RelayCommand]
@@ -391,5 +400,38 @@ namespace SqlConstraintHelper.Desktop.ViewModels
                 StatusMessage = "SQL formatted";
             }
         }
+
+        private bool _isTablesPanelOpen = true;
+        public bool IsTablesPanelOpen
+        {
+            get => _isTablesPanelOpen;
+            set
+            {
+                _isTablesPanelOpen = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(TablesPanelWidth));
+            }
+        }
+
+        public GridLength TablesPanelWidth =>
+            IsTablesPanelOpen ? new GridLength(280) : new GridLength(0);
+
+        private bool _showSql = true;
+        public bool ShowSql
+        {
+            get => _showSql;
+            set
+            {
+                _showSql = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ICommand ToggleFocusModeCommand => new RelayCommand(() =>
+        {
+            IsTablesPanelOpen = !IsTablesPanelOpen;
+            ShowSql = !ShowSql;
+        });
+
     }
 }

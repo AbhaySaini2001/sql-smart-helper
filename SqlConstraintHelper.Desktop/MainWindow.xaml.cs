@@ -2,6 +2,7 @@
 using SqlConstraintHelper.Desktop.Controls;
 using SqlConstraintHelper.Desktop.ViewModels;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
 
 namespace SqlConstraintHelper.Desktop;
@@ -88,6 +89,35 @@ public partial class MainWindow : Window
             DataContext is MainViewModel vm)
         {
             vm.QueryBuilderViewModel.AddTableCommand.Execute(tableInfo);
+        }
+    }
+
+    // Event handler for double-clicking available tables in Query Builder
+    private void AvailableTable_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (sender is ListBox listBox &&
+            listBox.SelectedItem is TableInfo tableInfo &&
+            DataContext is MainViewModel vm)
+        {
+            vm.QueryBuilderViewModel.AddTableCommand.Execute(tableInfo);
+        }
+    }
+
+    private void TestAddTable_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainViewModel vm)
+        {
+            var firstTable = vm.QueryBuilderViewModel.AvailableTablesList.FirstOrDefault();
+            if (firstTable != null)
+            {
+                MessageBox.Show($"Found table: {firstTable.TableName}. Attempting to add...");
+                vm.QueryBuilderViewModel.AddTableCommand.Execute(firstTable);
+                MessageBox.Show("Command executed!");
+            }
+            else
+            {
+                MessageBox.Show("No tables in AvailableTablesList!");
+            }
         }
     }
 }
